@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma-client";
-import { RegistrationStatus, EventType } from "../../../generated/prisma";
+import { RegistrationStatus, EventType } from "../../../generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { Event, Registration } from "@/types";
 

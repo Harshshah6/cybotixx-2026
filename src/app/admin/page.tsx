@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import { getEvents, getRegistrations, createEvent, updateEvent, deleteEvent, deleteRegistration } from "@/app/actions/events";
 import { logoutAdmin } from "@/app/actions/auth";
 import { toast } from "sonner";
-import { EventType } from "../../../generated/prisma";
+import { EventType } from "../../../generated/prisma/client";
 import { Event, Registration } from "@/types";
 
 const Admin = () => {

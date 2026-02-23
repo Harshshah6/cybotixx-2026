@@ -1,4 +1,4 @@
-import { EventType, RegistrationStatus } from "../../generated/prisma";
+import { EventType, RegistrationStatus } from "../../generated/prisma/client";
 
 export interface Event {
     id: string;
