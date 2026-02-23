@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { loginAdmin } from "../actions/auth";
 
 const AdminLogin = () => {
   const router = useRouter();
@@ -18,16 +19,19 @@ const AdminLogin = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Mock login logic
-    setTimeout(() => {
-      if (email === "admin@example.com" && password === "admin123") {
-        toast("Login successful");
+    try {
+      const result = await loginAdmin(email, password);
+      if (result.success) {
+        toast.success("Login successful");
         router.push("/admin");
       } else {
-        toast("Login failed");
+        toast.error(result.error || "Login failed");
       }
+    } catch (error) {
+      toast.error("An error occurred");
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (

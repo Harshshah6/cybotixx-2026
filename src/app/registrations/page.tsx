@@ -8,7 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 
-import { initialEvents, initialRegistrations } from "@/lib/mockData";
+import { toast } from "sonner";
+import { useEffect, useCallback } from "react";
+import { getEvents, getRegistrations } from "@/app/actions/events";
+import { Event, Registration, TeamMember } from "@/types";
 
 const PAGE_SIZE = 10;
 
@@ -16,20 +19,41 @@ const Registrations = () => {
   const [search, setSearch] = useState("");
   const [eventFilter, setEventFilter] = useState("all");
   const [page, setPage] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
 
-  // Mock data fetching
-  const events = initialEvents;
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [eventsData, registrationsData] = await Promise.all([
+        getEvents(),
+        getRegistrations(eventFilter)
+      ]);
+      setEvents(eventsData);
+      setRegistrations(registrationsData);
+    } catch (error) {
+      toast.error("Failed to load data");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [eventFilter]);
 
-  const filteredRegistrations = initialRegistrations.filter(reg => {
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const filteredRegistrations = registrations.filter((reg: Registration) => {
+    const participantName = reg.participant?.fullName || "";
+    const participantEmail = reg.participant?.email || "";
+    const teamName = reg.teamName || "";
+
     const matchesSearch = !search.trim() ||
-      reg.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      reg.email.toLowerCase().includes(search.toLowerCase()) ||
-      (reg.team_name && reg.team_name.toLowerCase().includes(search.toLowerCase()));
+      participantName.toLowerCase().includes(search.toLowerCase()) ||
+      participantEmail.toLowerCase().includes(search.toLowerCase()) ||
+      teamName.toLowerCase().includes(search.toLowerCase());
 
-    const matchesEvent = eventFilter === "all" || reg.event_id === eventFilter;
-
-    return matchesSearch && matchesEvent;
+    return matchesSearch;
   });
 
   const data = {
@@ -90,21 +114,21 @@ const Registrations = () => {
                     </tr>
                   ))
                 ) : data?.rows && data.rows.length > 0 ? (
-                  data.rows.map((r: any) => (
+                  data.rows.map((r: Registration) => (
                     <tr key={r.id} className="border-b hover:bg-muted/20 transition-colors">
                       <td className="p-3">
-                        <div className="font-medium">{r.full_name}</div>
-                        <div className="text-xs text-muted-foreground sm:hidden">{r.events?.name}</div>
+                        <div className="font-medium">{r.participant?.fullName}</div>
+                        <div className="text-xs text-muted-foreground sm:hidden">{r.event?.name}</div>
                       </td>
-                      <td className="p-3 hidden sm:table-cell">{r.events?.name}</td>
+                      <td className="p-3 hidden sm:table-cell">{r.event?.name}</td>
                       <td className="p-3 hidden md:table-cell">
                         <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider">
-                          {r.events?.event_type}
+                          {r.event?.eventType}
                         </Badge>
                       </td>
                       <td className="p-3 hidden lg:table-cell text-muted-foreground text-xs">
-                        {r.team_members && r.team_members.length > 0
-                          ? r.team_members.sort((a: any, b: any) => a.member_order - b.member_order).map((m: any) => m.member_name).join(", ")
+                        {r.teamMembers && r.teamMembers.length > 0
+                          ? r.teamMembers.map((m: TeamMember) => m.name).join(", ")
                           : "—"}
                       </td>
                     </tr>

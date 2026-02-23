@@ -10,10 +10,20 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { initialEvents } from "@/lib/mockData";
-
 import { getEventStatus, getStatusVariant } from "@/lib/eventStatus";
 import { toast } from "sonner";
+import { useEffect, useCallback } from "react";
+import { getEvents, registerParticipant } from "@/app/actions/events";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { CheckCircle2, AlertCircle, X } from "lucide-react";
+import { Event } from "@/types";
 
 const phoneRegex = /^[+]?[\d\s-]{10,15}$/;
 
@@ -26,18 +36,41 @@ const Register = () => {
   const [teamData, setTeamData] = useState<Record<string, { members: string[] }>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data
-  const events = initialEvents;
-  const isLoading = false;
-  const regCounts: Record<string, number> = {}; // Mock empty counts
+  // Dialog State
+  const [feedbackDialog, setFeedbackDialog] = useState<{
+    open: boolean;
+    type: "success" | "error";
+    message: string;
+  }>({
+    open: false,
+    type: "success",
+    message: ""
+  });
+
+  const fetchEventsData = useCallback(async () => {
+    try {
+      const data = await getEvents();
+      setEvents(data);
+    } catch (error) {
+      toast.error("Failed to load events");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEventsData();
+  }, [fetchEventsData]);
 
   // Filter out ended events
-  const activeEvents = events?.filter((e: any) => getEventStatus(e.event_date) !== "ended") || [];
+  const activeEvents = events?.filter((e) => getEventStatus(e.eventDate) !== "ended") || [];
 
-  const isEventFull = (event: any) => {
-    if (!event.max_slots) return false;
-    return (regCounts?.[event.id] || 0) >= event.max_slots;
+  const isEventFull = (event: Event) => {
+    if (!event.maxSlots) return false;
+    return (event._count?.registrations || 0) >= event.maxSlots;
   };
 
   const toggleEvent = (eventId: string) => {
@@ -49,11 +82,11 @@ const Register = () => {
         return prev.filter((id) => id !== eventId);
       }
       const event = events?.find((e: any) => e.id === eventId);
-      if (event?.event_type === "team") {
+      if (event?.eventType === "TEAM") {
         setTeamData((prev) => ({
           ...prev,
           [eventId]: {
-            members: Array((event.max_team_size || 2) - 1).fill(""),
+            members: Array((event.maxTeamSize || 2) - 1).fill(""),
           },
         }));
       }
@@ -78,7 +111,7 @@ const Register = () => {
 
     for (const eventId of selectedEvents) {
       const event = events?.find((e: any) => e.id === eventId);
-      if (event?.event_type === "team") {
+      if (event?.eventType === "TEAM") {
         const td = teamData[eventId];
         td?.members.forEach((m, i) => {
           if (!m.trim()) errs[`member_${eventId}_${i}`] = "Member name required";
@@ -90,22 +123,48 @@ const Register = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmitMock = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      toast("Registration successful!");
-      setFullName("");
-      setEmail("");
-      setPhone("");
-      setSelectedEvents([]);
-      setTeamData({});
-      setErrors({});
+    try {
+      const result = await registerParticipant({
+        fullName,
+        email,
+        phone,
+        selectedEvents,
+        teamData
+      });
+
+      if (result.success) {
+        setFeedbackDialog({
+          open: true,
+          type: "success",
+          message: "Registration successful! We've sent a confirmation to your email."
+        });
+        setFullName("");
+        setEmail("");
+        setPhone("");
+        setSelectedEvents([]);
+        setTeamData({});
+        setErrors({});
+      } else {
+        setFeedbackDialog({
+          open: true,
+          type: "error",
+          message: result.error || "Registration failed. Please try again."
+        });
+      }
+    } catch (error) {
+      setFeedbackDialog({
+        open: true,
+        type: "error",
+        message: "An unexpected error occurred. Please check your connection."
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -117,7 +176,7 @@ const Register = () => {
           <h1 className="text-3xl sm:text-4xl font-bold mb-2">Event Registration</h1>
           <p className="text-muted-foreground text-sm mb-10">Fill in your details and select events to register.</p>
 
-          <form onSubmit={handleSubmitMock} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-8">
             {/* Personal Info */}
             <div className="space-y-4">
               <h2 className="font-mono text-sm font-semibold uppercase tracking-wider border-b pb-2">Personal Info</h2>
@@ -157,10 +216,10 @@ const Register = () => {
                 <div className="space-y-3">
                   {activeEvents.map((event) => {
                     const selected = selectedEvents.includes(event.id);
-                    const status = getEventStatus(event.event_date);
+                    const status = getEventStatus(event.eventDate);
                     const full = isEventFull(event);
                     const disabled = full;
-                    const spotsLeft = event.max_slots ? event.max_slots - (regCounts?.[event.id] || 0) : null;
+                    const spotsLeft = event.maxSlots ? event.maxSlots - (event._count?.registrations || 0) : null;
 
                     return (
                       <div key={event.id} className={`border rounded-lg p-4 transition-colors ${disabled ? "opacity-50" : ""} ${selected ? "bg-muted/50 border-foreground/20" : ""}`}>
@@ -178,7 +237,7 @@ const Register = () => {
                                 {event.name}
                               </label>
                               <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider">
-                                {event.event_type}
+                                {event.eventType}
                               </Badge>
                               <Badge variant={getStatusVariant(status)} className="font-mono text-[10px] uppercase tracking-wider">
                                 {status}
@@ -193,10 +252,10 @@ const Register = () => {
                               <p className="text-xs text-muted-foreground mt-1">{event.description}</p>
                             )}
                             <div className="flex items-center gap-3 mt-2">
-                              {event.event_date && (
+                              {event.eventDate && (
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                   <Calendar size={10} />
-                                  {new Date(event.event_date).toLocaleDateString()}
+                                  {new Date(event.eventDate).toLocaleDateString()}
                                 </div>
                               )}
                               {spotsLeft !== null && !full && (
@@ -205,7 +264,7 @@ const Register = () => {
                             </div>
 
                             {/* Team fields */}
-                            {selected && event.event_type === "team" && teamData[event.id] && (
+                            {selected && event.eventType === "TEAM" && teamData[event.id] && (
                               <div className="mt-4 pl-0 space-y-3 border-t pt-4">
                                 <p className="text-xs text-muted-foreground">Member 1 (Leader): {fullName || "—"}</p>
                                 {teamData[event.id].members.map((m, i) => (
@@ -252,6 +311,63 @@ const Register = () => {
         </div>
       </main>
       <Footer />
+
+      {/* Feedback Dialog */}
+      <Dialog
+        open={feedbackDialog.open}
+        onOpenChange={(open) => setFeedbackDialog(prev => ({ ...prev, open }))}
+      >
+        <DialogContent className="sm:max-w-md border-2 border-foreground/10 p-0 overflow-hidden bg-background">
+          <div className={`h-2 w-full ${feedbackDialog.type === "success" ? "bg-foreground" : "bg-destructive"}`} />
+          <div className="p-8 pb-10">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className={`p-3 rounded-full ${feedbackDialog.type === "success" ? "bg-foreground/5" : "bg-destructive/5"}`}>
+                {feedbackDialog.type === "success" ? (
+                  <CheckCircle2 className="w-10 h-10 text-foreground" strokeWidth={1.5} />
+                ) : (
+                  <AlertCircle className="w-10 h-10 text-destructive" strokeWidth={1.5} />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <DialogTitle className="font-mono text-xl font-bold tracking-tighter uppercase">
+                  {feedbackDialog.type === "success" ? "Registration Success" : "Registration Failed"}
+                </DialogTitle>
+                <DialogDescription className="text-muted-foreground text-sm max-w-[280px]">
+                  {feedbackDialog.message}
+                </DialogDescription>
+              </div>
+            </div>
+
+            <div className="mt-10 flex flex-col gap-3">
+              {feedbackDialog.type === "success" ? (
+                <>
+                  <Button
+                    className="w-full font-mono uppercase tracking-widest text-xs h-12"
+                    onClick={() => router.push("/")}
+                  >
+                    Back to Home
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full font-mono uppercase tracking-widest text-xs h-12 border-foreground/10"
+                    onClick={() => setFeedbackDialog({ ...feedbackDialog, open: false })}
+                  >
+                    Review Details
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  className="w-full font-mono uppercase tracking-widest text-xs h-12 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                  onClick={() => setFeedbackDialog({ ...feedbackDialog, open: false })}
+                >
+                  <X className="w-3 h-3 mr-2" /> Try Again
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

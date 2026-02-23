@@ -1,8 +1,14 @@
-export function getEventStatus(eventDate: string | null): "upcoming" | "ongoing" | "ended" {
+export function getEventStatus(eventDate: Date | string | null): "upcoming" | "ongoing" | "ended" {
   if (!eventDate) return "upcoming";
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const date = new Date(eventDate + "T00:00:00");
+
+  const date = typeof eventDate === "string"
+    ? new Date(eventDate.includes("T") ? eventDate : eventDate + "T00:00:00")
+    : new Date(eventDate);
+
+  date.setHours(0, 0, 0, 0);
+
   if (date > today) return "upcoming";
   if (date.getTime() === today.getTime()) return "ongoing";
   return "ended";

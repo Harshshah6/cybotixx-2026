@@ -8,101 +8,131 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Loader2, Plus, Pencil, Trash2, LogOut, BarChart3, Users, CalendarDays } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { initialEvents, initialRegistrations, Event, Registration } from "@/lib/mockData";
+import { getEvents, getRegistrations, createEvent, updateEvent, deleteEvent, deleteRegistration } from "@/app/actions/events";
+import { logoutAdmin } from "@/app/actions/auth";
 import { toast } from "sonner";
+import { EventType } from "../../../generated/prisma";
+import { Event, Registration } from "@/types";
 
 const Admin = () => {
     const router = useRouter();
     const [eventDialogOpen, setEventDialogOpen] = useState(false);
-    const [editingEvent, setEditingEvent] = useState<any>(null);
+    const [editingEvent, setEditingEvent] = useState<Event | null>(null);
     const [form, setForm] = useState({
-        name: "", description: "", event_date: "", event_type: "solo" as "solo" | "team",
-        max_team_size: 1, max_slots: "" as string, is_active: true,
+        name: "", description: "", eventDate: "", eventType: "SOLO" as EventType,
+        maxTeamSize: 1, maxSlots: "" as string, isActive: true,
     });
 
-    const [events, setEvents] = useState<Event[]>(initialEvents);
-    const [registrations, setRegistrations] = useState<Registration[]>(initialRegistrations);
-    const [stats, setStats] = useState({ events: initialEvents.length, registrations: initialRegistrations.length });
-    const [isLoading, setIsLoading] = useState(false);
+    const [events, setEvents] = useState<Event[]>([]);
+    const [registrations, setRegistrations] = useState<Registration[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Mock auth state
-    const authLoading = false;
-    const user = { email: "admin@example.com" };
-    const isAdmin = true;
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [eventsData, registrationsData] = await Promise.all([
+                getEvents(),
+                getRegistrations()
+            ]);
+            setEvents(eventsData);
+            setRegistrations(registrationsData);
+        } catch (error) {
+            toast.error("Failed to load admin data");
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const resetForm = () => {
-        setForm({ name: "", description: "", event_date: "", event_type: "solo", max_team_size: 1, max_slots: "", is_active: true });
+        setForm({ name: "", description: "", eventDate: "", eventType: "SOLO", maxTeamSize: 1, maxSlots: "", isActive: true });
         setEditingEvent(null);
     };
 
-    // Redirect if not admin (Mock)
-    useEffect(() => {
-        if (!authLoading && (!user || !isAdmin)) {
-            router.push("/adminlogin");
-        }
-    }, [authLoading, user, isAdmin, router]);
-
-    if (!isAdmin) return null;
-
     const handleSaveEvent = async () => {
         setIsSaving(true);
-        const payload: Event = {
-            id: editingEvent ? editingEvent.id : Math.random().toString(36).substr(2, 9),
+        const eventData = {
             name: form.name,
-            description: form.description || null,
-            event_date: form.event_date || null,
-            event_type: form.event_type,
-            min_team_size: form.event_type === "team" ? 2 : 1,
-            max_team_size: form.event_type === "team" ? form.max_team_size : 1,
-            max_slots: form.max_slots ? parseInt(form.max_slots) : null,
-            is_active: form.is_active,
+            description: form.description,
+            eventDate: form.eventDate,
+            eventType: form.eventType,
+            maxTeamSize: form.eventType === "TEAM" ? form.maxTeamSize : 1,
+            maxSlots: form.maxSlots ? parseInt(form.maxSlots) : undefined,
+            isActive: form.isActive,
         };
 
-        // Mock delay
-        setTimeout(() => {
-            if (editingEvent) {
-                setEvents(prev => prev.map(e => e.id === editingEvent.id ? payload : e));
-                toast("Event updated (Mock)");
+        try {
+            const result = editingEvent
+                ? await updateEvent(editingEvent.id, eventData)
+                : await createEvent(eventData);
+
+            if (result.success) {
+                toast.success(editingEvent ? "Event updated" : "Event created");
+                fetchData();
+                setEventDialogOpen(false);
+                resetForm();
             } else {
-                setEvents(prev => [payload, ...prev]);
-                toast("Event created (Mock)");
+                toast.error(result.error || "Operation failed");
             }
-            setStats(prev => ({ ...prev, events: editingEvent ? prev.events : prev.events + 1 }));
+        } catch (error) {
+            toast.error("An unexpected error occurred");
+        } finally {
             setIsSaving(false);
-            setEventDialogOpen(false);
-            resetForm();
-        }, 500);
+        }
     };
 
-    const handleDeleteEvent = (id: string) => {
-        setEvents(prev => prev.filter(e => e.id !== id));
-        setStats(prev => ({ ...prev, events: prev.events - 1 }));
-        toast("Event deleted (Mock)");
+    const handleDeleteEvent = async (id: string) => {
+        if (!confirm("Are you sure? This will delete all registrations for this event.")) return;
+        try {
+            const result = await deleteEvent(id);
+            if (result.success) {
+                toast.success("Event deleted");
+                fetchData();
+            } else {
+                toast.error(result.error || "Delete failed");
+            }
+        } catch (error) {
+            toast.error("Delete failed");
+        }
     };
 
-    const handleDeleteRegistration = (id: string) => {
-        setRegistrations(prev => prev.filter(r => r.id !== id));
-        setStats(prev => ({ ...prev, registrations: prev.registrations - 1 }));
-        toast("Registration deleted (Mock)");
+    const handleDeleteRegistration = async (id: string) => {
+        if (!confirm("Are you sure?")) return;
+        try {
+            const result = await deleteRegistration(id);
+            if (result.success) {
+                toast.success("Registration deleted");
+                fetchData();
+            } else {
+                toast.error(result.error || "Delete failed");
+            }
+        } catch (error) {
+            toast.error("Delete failed");
+        }
     };
 
     const handleLogout = async () => {
+        await logoutAdmin();
+        toast.success("Logged out");
         router.push("/adminlogin");
     };
 
-    const openEdit = (event: any) => {
+    const openEdit = (event: Event) => {
         setEditingEvent(event);
         setForm({
             name: event.name,
             description: event.description || "",
-            event_date: event.event_date || "",
-            event_type: event.event_type,
-            max_team_size: event.max_team_size || 1,
-            max_slots: event.max_slots ? String(event.max_slots) : "",
-            is_active: event.is_active,
+            eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : "",
+            eventType: event.eventType,
+            maxTeamSize: event.maxTeamSize || 1,
+            maxSlots: event.maxSlots ? String(event.maxSlots) : "",
+            isActive: event.isActive,
         });
         setEventDialogOpen(true);
     };
@@ -127,14 +157,14 @@ const Admin = () => {
                             <CalendarDays size={14} />
                             <span className="font-mono text-xs uppercase tracking-wider">Events</span>
                         </div>
-                        <p className="text-3xl font-bold font-mono">{stats?.events ?? "—"}</p>
+                        <p className="text-3xl font-bold font-mono">{events.length}</p>
                     </div>
                     <div className="border rounded-lg p-5">
                         <div className="flex items-center gap-2 text-muted-foreground mb-1">
                             <Users size={14} />
                             <span className="font-mono text-xs uppercase tracking-wider">Registrations</span>
                         </div>
-                        <p className="text-3xl font-bold font-mono">{stats?.registrations ?? "—"}</p>
+                        <p className="text-3xl font-bold font-mono">{registrations.length}</p>
                     </div>
                     <div className="border rounded-lg p-5">
                         <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -142,7 +172,7 @@ const Admin = () => {
                             <span className="font-mono text-xs uppercase tracking-wider">Active Events</span>
                         </div>
                         <p className="text-3xl font-bold font-mono">
-                            {events?.filter((e) => e.is_active).length ?? "—"}
+                            {events?.filter((e) => e.isActive).length ?? "—"}
                         </p>
                     </div>
                 </div>
@@ -173,28 +203,28 @@ const Admin = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <Label>Date</Label>
-                                            <Input type="date" value={form.event_date} onChange={(e) => setForm({ ...form, event_date: e.target.value })} className="mt-1" />
+                                            <Input type="date" value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} className="mt-1" />
                                         </div>
                                         <div>
                                             <Label>Type</Label>
-                                            <Select value={form.event_type} onValueChange={(v: "solo" | "team") => setForm({ ...form, event_type: v })}>
+                                            <Select value={form.eventType} onValueChange={(v: EventType) => setForm({ ...form, eventType: v })}>
                                                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="solo">Solo</SelectItem>
-                                                    <SelectItem value="team">Team</SelectItem>
+                                                    <SelectItem value="SOLO">Solo</SelectItem>
+                                                    <SelectItem value="TEAM">Team</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
                                     </div>
-                                    {form.event_type === "team" && (
+                                    {form.eventType === "TEAM" && (
                                         <div>
                                             <Label>Max Team Size</Label>
-                                            <Input type="number" min={2} value={form.max_team_size} onChange={(e) => setForm({ ...form, max_team_size: +e.target.value })} className="mt-1" />
+                                            <Input type="number" min={2} value={form.maxTeamSize} onChange={(e) => setForm({ ...form, maxTeamSize: +e.target.value })} className="mt-1" />
                                         </div>
                                     )}
                                     <div>
                                         <Label>Max Slots (optional)</Label>
-                                        <Input type="number" min={1} value={form.max_slots} onChange={(e) => setForm({ ...form, max_slots: e.target.value })} placeholder="Unlimited" className="mt-1" />
+                                        <Input type="number" min={1} value={form.maxSlots} onChange={(e) => setForm({ ...form, maxSlots: e.target.value })} placeholder="Unlimited" className="mt-1" />
                                     </div>
                                     <Button type="submit" className="w-full font-mono" disabled={isSaving}>
                                         {isSaving ? <Loader2 size={16} className="animate-spin" /> : editingEvent ? "Update" : "Create"}
@@ -222,14 +252,14 @@ const Admin = () => {
                                     <tr key={event.id} className="border-b hover:bg-muted/20 transition-colors">
                                         <td className="p-3 font-medium">{event.name}</td>
                                         <td className="p-3 hidden sm:table-cell">
-                                            <Badge variant="outline" className="font-mono text-[10px] uppercase">{event.event_type}</Badge>
+                                            <Badge variant="outline" className="font-mono text-[10px] uppercase">{event.eventType}</Badge>
                                         </td>
                                         <td className="p-3 hidden md:table-cell text-muted-foreground">
-                                            {event.event_date ? new Date(event.event_date).toLocaleDateString() : "—"}
+                                            {event.eventDate ? new Date(event.eventDate).toLocaleDateString() : "—"}
                                         </td>
                                         <td className="p-3 hidden md:table-cell">
-                                            <Badge variant={event.is_active ? "default" : "secondary"} className="font-mono text-[10px]">
-                                                {event.is_active ? "Active" : "Inactive"}
+                                            <Badge variant={event.isActive ? "default" : "secondary"} className="font-mono text-[10px]">
+                                                {event.isActive ? "Active" : "Inactive"}
                                             </Badge>
                                         </td>
                                         <td className="p-3 text-right">
@@ -260,13 +290,13 @@ const Admin = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {registrations?.map((r: any) => (
+                                {registrations?.map((r: Registration) => (
                                     <tr key={r.id} className="border-b hover:bg-muted/20 transition-colors">
-                                        <td className="p-3 font-medium">{r.full_name}</td>
-                                        <td className="p-3 hidden sm:table-cell">{r.events?.name}</td>
-                                        <td className="p-3 hidden md:table-cell text-muted-foreground">{r.email}</td>
+                                        <td className="p-3 font-medium">{r.participant?.fullName}</td>
+                                        <td className="p-3 hidden sm:table-cell">{r.event?.name}</td>
+                                        <td className="p-3 hidden md:table-cell text-muted-foreground">{r.participant?.email}</td>
                                         <td className="p-3 hidden lg:table-cell text-muted-foreground">
-                                            {r.team_members && r.team_members.length > 0 ? `${r.team_members.length} members` : "—"}
+                                            {r.teamMembers && r.teamMembers.length > 0 ? `${r.teamMembers.length} members` : "—"}
                                         </td>
                                         <td className="p-3 text-right">
                                             <Button variant="ghost" size="sm" onClick={() => handleDeleteRegistration(r.id)}>

@@ -4,9 +4,13 @@ import ClubHeadsSection from "@/components/landing/ClubHeadsSection";
 import EventsPreviewSection from "@/components/landing/EventsPreviewSection";
 import HeroSection from "@/components/landing/HeroSection";
 import Navbar from "@/components/Navbar";
-import Image from "next/image";
+import { getEvents } from "./actions/events";
 
-export default function Home() {
+export default async function Home() {
+  const events = await getEvents();
+  // Show at most 4 events on landing page
+  const previewEvents = events.slice(0, 4);
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -14,7 +18,7 @@ export default function Home() {
         <HeroSection />
         <AboutSection />
         <ClubHeadsSection />
-        <EventsPreviewSection />
+        <EventsPreviewSection events={previewEvents} />
       </main>
       <Footer />
     </div>
