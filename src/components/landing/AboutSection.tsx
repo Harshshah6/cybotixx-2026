@@ -1,8 +1,8 @@
-import { Code, Trophy, Users, Lightbulb } from "lucide-react";
+import { Trophy, Users, Lightbulb } from "lucide-react";
 
 const features = [
-  { icon: Code, title: "Hackathons", desc: "Build real projects in intense 24-48hr sprints" },
-  { icon: Trophy, title: "Coding Contests", desc: "Compete and sharpen your problem-solving skills" },
+  // { icon: Code, title: "Hackathons", desc: "Build real projects in intense 24-48hr sprints" },
+  { icon: Trophy, title: "Contests", desc: "Compete and sharpen your skills" },
   { icon: Users, title: "Workshops", desc: "Hands-on sessions on trending technologies" },
   { icon: Lightbulb, title: "Tech Talks", desc: "Learn from industry professionals and peers" },
 ];

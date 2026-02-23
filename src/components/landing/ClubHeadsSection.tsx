@@ -1,8 +1,7 @@
 const heads = [
-  { name: "Aarav Sharma", position: "President", bio: "Full-stack enthusiast leading the vision of Cybotixx." },
-  { name: "Priya Patel", position: "Vice President", bio: "DevOps advocate and community organizer." },
-  { name: "Rahul Nair", position: "Tech Lead", bio: "Competitive programmer and open-source contributor." },
-  { name: "Sneha Gupta", position: "Design Lead", bio: "UI/UX designer crafting seamless digital experiences." },
+  { name: "Muhammed Falah", position: "President", bio: "Third year BCA student, AI/ML enthusiast" },
+  { name: "Mohammed Maaz", position: "Vice President", bio: "Third year BCA student, Full-stack developer" },
+  { name: "Harsh S Shah", position: "Tech Lead", bio: "Second year BCA student, open-source contributor." },
 ];
 
 const ClubHeadsSection = () => (
@@ -14,11 +13,11 @@ const ClubHeadsSection = () => (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {heads.map((h) => (
           <div key={h.name} className="border rounded-lg p-6">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+            {/* <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <span className="font-mono text-lg font-bold text-muted-foreground">
                 {h.name.split(" ").map(n => n[0]).join("")}
               </span>
-            </div>
+            </div> */}
             <h3 className="font-mono text-sm font-semibold">{h.name}</h3>
             <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider mt-1">{h.position}</p>
             <p className="text-sm text-muted-foreground mt-3">{h.bio}</p>
