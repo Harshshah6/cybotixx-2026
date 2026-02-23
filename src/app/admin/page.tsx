@@ -39,7 +39,7 @@ const Admin = () => {
             ]);
             setEvents(eventsData);
             setRegistrations(registrationsData);
-        } catch (error) {
+        } catch {
             toast.error("Failed to load admin data");
         } finally {
             setIsLoading(false);
@@ -80,7 +80,7 @@ const Admin = () => {
             } else {
                 toast.error(result.error || "Operation failed");
             }
-        } catch (error) {
+        } catch {
             toast.error("An unexpected error occurred");
         } finally {
             setIsSaving(false);
@@ -97,7 +97,7 @@ const Admin = () => {
             } else {
                 toast.error(result.error || "Delete failed");
             }
-        } catch (error) {
+        } catch {
             toast.error("Delete failed");
         }
     };
@@ -112,7 +112,7 @@ const Admin = () => {
             } else {
                 toast.error(result.error || "Delete failed");
             }
-        } catch (error) {
+        } catch {
             toast.error("Delete failed");
         }
     };

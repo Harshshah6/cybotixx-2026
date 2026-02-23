@@ -17,10 +17,8 @@ import { getEvents, registerParticipant } from "@/app/actions/events";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { CheckCircle2, AlertCircle, X } from "lucide-react";
 import { Event } from "@/types";
@@ -54,7 +52,7 @@ const Register = () => {
     try {
       const data = await getEvents();
       setEvents(data);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load events");
     } finally {
       setIsLoading(false);
@@ -81,7 +79,7 @@ const Register = () => {
         setTeamData(newTeam);
         return prev.filter((id) => id !== eventId);
       }
-      const event = events?.find((e: any) => e.id === eventId);
+      const event = events?.find((e: Event) => e.id === eventId);
       if (event?.eventType === "TEAM") {
         setTeamData((prev) => ({
           ...prev,
@@ -110,7 +108,7 @@ const Register = () => {
     if (selectedEvents.length === 0) errs.events = "Select at least one event";
 
     for (const eventId of selectedEvents) {
-      const event = events?.find((e: any) => e.id === eventId);
+      const event = events?.find((e: Event) => e.id === eventId);
       if (event?.eventType === "TEAM") {
         const td = teamData[eventId];
         td?.members.forEach((m, i) => {
@@ -156,7 +154,7 @@ const Register = () => {
           message: result.error || "Registration failed. Please try again."
         });
       }
-    } catch (error) {
+    } catch {
       setFeedbackDialog({
         open: true,
         type: "error",
@@ -333,7 +331,7 @@ const Register = () => {
                 <DialogTitle className="font-mono text-xl font-bold tracking-tighter uppercase">
                   {feedbackDialog.type === "success" ? "Registration Success" : "Registration Failed"}
                 </DialogTitle>
-                <DialogDescription className="text-muted-foreground text-sm max-w-[280px]">
+                <DialogDescription className="text-muted-foreground text-sm max-w-70">
                   {feedbackDialog.message}
                 </DialogDescription>
               </div>
