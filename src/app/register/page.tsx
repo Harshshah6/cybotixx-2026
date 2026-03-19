@@ -253,7 +253,7 @@ const Register = () => {
                               {event.eventDate && (
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                   <Calendar size={10} />
-                                  {new Date(event.eventDate).toLocaleDateString()}
+                                  {new Date(event.eventDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                                 </div>
                               )}
                               {spotsLeft !== null && !full && (
@@ -349,7 +349,10 @@ const Register = () => {
                   <Button
                     variant="outline"
                     className="w-full font-mono uppercase tracking-widest text-xs h-12 border-foreground/10"
-                    onClick={() => setFeedbackDialog({ ...feedbackDialog, open: false })}
+                    onClick={() => {
+                      const filterEvent = selectedEvents.length === 1 ? selectedEvents[0] : "all";
+                      router.push(`/registrations?eventId=${filterEvent}`);
+                    }}
                   >
                     Review Details
                   </Button>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { JetBrains_Mono, Inter } from "next/font/google";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 export const metadata: Metadata = {
   title: "Cybotixx - BCA Forum",
@@ -10,13 +11,13 @@ export const metadata: Metadata = {
 
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['300','400','500','600','700'],
+  weight: ['300', '400', '500', '600', '700'],
   variable: '--font-inter',
 });
 
 const jetbrains = JetBrains_Mono({
   subsets: ['latin'],
-  weight: ['400','500','600','700'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-jetbrains',
 });
 
@@ -32,8 +33,10 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrains.variable} antialiased`}
         suppressHydrationWarning
       >
-        <Toaster/>
-        {children}
+        <NuqsAdapter>
+          <Toaster />
+          {children}
+        </NuqsAdapter>
       </body>
     </html>
   );

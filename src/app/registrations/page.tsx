@@ -1,5 +1,6 @@
 'use client';
 import { useState } from "react";
+import { useQueryState } from "nuqs";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
@@ -16,8 +17,8 @@ import { Event, Registration, TeamMember } from "@/types";
 const PAGE_SIZE = 10;
 
 const Registrations = () => {
-  const [search, setSearch] = useState("");
-  const [eventFilter, setEventFilter] = useState("all");
+  const [search, setSearch] = useQueryState("search", { defaultValue: "" });
+  const [eventFilter, setEventFilter] = useQueryState("eventId", { defaultValue: "all" });
   const [page, setPage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [events, setEvents] = useState<Event[]>([]);
@@ -103,7 +104,7 @@ const Registrations = () => {
                   <th className="text-left p-3 font-mono text-xs uppercase tracking-wider">Name</th>
                   <th className="text-left p-3 font-mono text-xs uppercase tracking-wider hidden sm:table-cell">Event</th>
                   <th className="text-left p-3 font-mono text-xs uppercase tracking-wider hidden md:table-cell">Type</th>
-                  <th className="text-left p-3 font-mono text-xs uppercase tracking-wider hidden lg:table-cell">Members</th>
+                  <th className="text-left p-3 font-mono text-xs uppercase tracking-wider">Members</th>
                 </tr>
               </thead>
               <tbody>
@@ -126,7 +127,7 @@ const Registrations = () => {
                           {r.event?.eventType}
                         </Badge>
                       </td>
-                      <td className="p-3 hidden lg:table-cell text-muted-foreground text-xs">
+                      <td className="p-3 text-muted-foreground text-xs">
                         {r.teamMembers && r.teamMembers.length > 0
                           ? r.teamMembers.map((m: TeamMember) => m.name).join(", ")
                           : "—"}

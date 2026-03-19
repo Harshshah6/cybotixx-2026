@@ -59,7 +59,7 @@ const EventsPreviewSection = () => {
                   {event.eventDate && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4">
                       <Calendar size={12} />
-                      <span>{new Date(event.eventDate).toLocaleDateString()}</span>
+                      <span>{new Date(event.eventDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
                     </div>
                   )}
                   <Link href="/register">

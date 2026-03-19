@@ -128,7 +128,7 @@ const Admin = () => {
         setForm({
             name: event.name,
             description: event.description || "",
-            eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : "",
+            eventDate: event.eventDate ? new Date(new Date(event.eventDate).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "",
             eventType: event.eventType,
             maxTeamSize: event.maxTeamSize || 1,
             maxSlots: event.maxSlots ? String(event.maxSlots) : "",
@@ -202,8 +202,8 @@ const Admin = () => {
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <Label>Date</Label>
-                                            <Input type="date" value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} className="mt-1" />
+                                            <Label>Date & Time</Label>
+                                            <Input type="datetime-local" value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} className="mt-1" />
                                         </div>
                                         <div>
                                             <Label>Type</Label>
@@ -255,7 +255,7 @@ const Admin = () => {
                                             <Badge variant="outline" className="font-mono text-[10px] uppercase">{event.eventType}</Badge>
                                         </td>
                                         <td className="p-3 hidden md:table-cell text-muted-foreground">
-                                            {event.eventDate ? new Date(event.eventDate).toLocaleDateString() : "—"}
+                                            {event.eventDate ? new Date(event.eventDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "—"}
                                         </td>
                                         <td className="p-3 hidden md:table-cell">
                                             <Badge variant={event.isActive ? "default" : "secondary"} className="font-mono text-[10px]">
