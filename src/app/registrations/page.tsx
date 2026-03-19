@@ -1,5 +1,5 @@
 'use client';
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useQueryState } from "nuqs";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -16,7 +16,7 @@ import { Event, Registration, TeamMember } from "@/types";
 
 const PAGE_SIZE = 10;
 
-const Registrations = () => {
+const RegistrationsContent = () => {
   const [search, setSearch] = useQueryState("search", { defaultValue: "" });
   const [eventFilter, setEventFilter] = useQueryState("eventId", { defaultValue: "all" });
   const [page, setPage] = useState(0);
@@ -163,6 +163,14 @@ const Registrations = () => {
       </main>
       <Footer />
     </div>
+  );
+};
+
+const Registrations = () => {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <RegistrationsContent />
+    </Suspense>
   );
 };
 
