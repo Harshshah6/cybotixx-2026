@@ -9,6 +9,7 @@ import { getEvents } from "@/app/actions/events";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Skeleton } from "../ui/skeleton";
+import dayjs from "dayjs";
 
 const EventsPreviewSection = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -59,7 +60,7 @@ const EventsPreviewSection = () => {
                   {event.eventDate && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4">
                       <Calendar size={12} />
-                      <span>{new Date(event.eventDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                      <span>{dayjs(event.eventDate).format("DD/MM/YY, hh:mm A")}</span>
                     </div>
                   )}
                   <Link href="/register">
