@@ -22,6 +22,12 @@ import {
 } from "@/components/ui/dialog";
 import { CheckCircle2, AlertCircle, X } from "lucide-react";
 import { Event } from "@/types";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const phoneRegex = /^[+]?[\d\s-]{10,15}$/;
 
@@ -218,6 +224,7 @@ const Register = () => {
                     const full = isEventFull(event);
                     const disabled = full;
                     const spotsLeft = event.maxSlots ? event.maxSlots - (event._count?.registrations || 0) : null;
+                    const formattedDate = dayjs(event.eventDate).format("DD/MM/YY, hh:mm A");
 
                     return (
                       <div key={event.id} className={`border rounded-lg p-4 transition-colors ${disabled ? "opacity-50" : ""} ${selected ? "bg-muted/50 border-foreground/20" : ""}`}>
@@ -253,7 +260,7 @@ const Register = () => {
                               {event.eventDate && (
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                   <Calendar size={10} />
-                                  {new Date(event.eventDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                  {formattedDate}
                                 </div>
                               )}
                               {spotsLeft !== null && !full && (
