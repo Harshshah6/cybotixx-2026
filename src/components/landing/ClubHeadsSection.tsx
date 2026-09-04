@@ -1,7 +1,9 @@
 const heads = [
-  { name: "Muhammed Falah", position: "President", bio: "Third year BCA student, AI/ML enthusiast" },
-  { name: "Mohammed Maaz", position: "Vice President", bio: "Third year BCA student, Full-stack developer" },
-  { name: "Harsh S Shah", position: "Tech Lead", bio: "Second year BCA student, open-source contributor." },
+  { name: "R Kishore", position: "President", bio: "Third year BCA student, AI/ML enthusiast." },
+  { name: "Pratheek D", position: "Vice President", bio: "Third year BCA student, Full-stack developer." },
+  { name: "Harsh S Shah", position: "Tech Lead", bio: "Third year BCA student, open-source contributor." },
+  {name:"Jyothi K", position:"Head", bio:"Third year BCA student, Event Head."},
+  {name:"Leena Soni", position:"Head", bio:"Third year BCA student, Event Head."},
 ];
 
 const ClubHeadsSection = () => (
